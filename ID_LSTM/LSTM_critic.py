@@ -20,7 +20,7 @@ class LSTM_CriticNetwork(object):
         self.dropout = dropout
         self.init = tf.random_uniform_initializer(-0.05, 0.05, dtype=tf.float32)
         self.L2regular = 0.00001 # add to parser
-        print("optimizer: ", optimizer)
+        print ("optimizer: ", optimizer)
         if optimizer == 'Adam':
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
         elif optimizer == 'Adagrad':
@@ -36,7 +36,6 @@ class LSTM_CriticNetwork(object):
 
         #critic network (updating)
         self.inputs, self.lenth, self.out = self.create_critic_network("Active")
-        
         self.network_params = tf.trainable_variables()[self.num_other_variables:]
         
         self.target_wordvector = tf.get_variable('wordvector_target', dtype=tf.float32, initializer=wordvector, trainable=True)
@@ -49,12 +48,18 @@ class LSTM_CriticNetwork(object):
         self.target_network_params = tf.trainable_variables()[len(self.network_params)+self.num_other_variables:]
 
         #delayed updating critic network ops
-        self.update_target_network_params = [self.target_network_params[i].assign(tf.multiply(self.network_params[i], self.tau)+tf.multiply(self.target_network_params[i], 1 - self.tau)) for i in range(len(self.target_network_params))]
+        self.update_target_network_params = \
+                [self.target_network_params[i].assign(\
+                tf.multiply(self.network_params[i], self.tau)+\
+                tf.multiply(self.target_network_params[i], 1 - self.tau))\
+                for i in range(len(self.target_network_params))]
         
-        self.assign_target_network_params = [self.target_network_params[i].assign(self.network_params[i]) for i in range(len(self.target_network_params))]
-        
-        
-        self.assign_active_network_params = [self.network_params[i].assign(self.target_network_params[i]) for i in range(len(self.network_params))]
+        self.assign_target_network_params = \
+                [self.target_network_params[i].assign(\
+                self.network_params[i]) for i in range(len(self.target_network_params))]
+        self.assign_active_network_params = \
+                [self.network_params[i].assign(\
+                self.target_network_params[i]) for i in range(len(self.network_params))]
 
         self.ground_truth = tf.placeholder(tf.float32, [1,self.grained], name="ground_truth")
         
@@ -63,7 +68,6 @@ class LSTM_CriticNetwork(object):
         self.loss_target = tf.nn.softmax_cross_entropy_with_logits(labels=self.ground_truth, logits=self.target_out)
         self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.ground_truth, logits=self.out)
         self.loss2 = 0
-        #L2 Norm
         with tf.variable_scope("Lower/Active", reuse=True):
             self.loss2+= tf.nn.l2_loss(tf.get_variable('lstm_cell/kernel'))
         with tf.variable_scope("Active/pred", reuse=True):
@@ -80,7 +84,7 @@ class LSTM_CriticNetwork(object):
         self.WVinput, self.WVvec = self.create_wordvector_find()
 
 
-    def create_critic_network(self, Scope): #取得reward
+    def create_critic_network(self, Scope):
         inputs = tf.placeholder(shape=[1, self.max_lenth], dtype=tf.int32, name="inputs")
         lenth = tf.placeholder(shape=[1], dtype=tf.int32, name="lenth")
        
@@ -91,8 +95,9 @@ class LSTM_CriticNetwork(object):
             vec = tf.nn.embedding_lookup(self.target_wordvector, inputs)
         cell = LSTMCell(self.dim, initializer=self.init, state_is_tuple=False)
         
+        with tf.variable_scope("Lower", reuse=True):
             out, _ = tf.nn.dynamic_rnn(cell, vec, lenth, dtype=tf.float32, scope=Scope)
-        out = tf.gather(out[0], lenth-1) #取出最後一個
+        out = tf.gather(out[0], lenth-1)
         
         out = tflearn.dropout(out, self.keep_prob)
         out = tflearn.fully_connected(out, self.grained, scope=Scope+"/pred", name="get_pred")
@@ -123,7 +128,7 @@ class LSTM_CriticNetwork(object):
             self.keep_prob: 1.0})
 
     def train(self, inputs, lenth, ground_truth):
-        return self.sess.run([self.target_out, self.
+        return self.sess.run([self.target_out, self.loss_target, self.optimize], feed_dict={
             self.target_inputs: inputs,
             self.target_lenth: lenth,
             self.ground_truth: ground_truth,

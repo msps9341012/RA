@@ -31,16 +31,22 @@ class ActorNetwork(object):
         self.target_network_params = tf.trainable_variables()[self.num_other_variables + len(self.network_params):]
 
         #delayed updaing actor network
-        self.update_target_network_params = [self.target_network_params[i].assign(tf.multiply(self.network_params[i], self.tau)+tf.multiply(self.target_network_params[i], 1 - self.tau)) for i in range(len(self.target_network_params))]
+        self.update_target_network_params = \
+                [self.target_network_params[i].assign(\
+                tf.multiply(self.network_params[i], self.tau) +\
+                tf.multiply(self.target_network_params[i], 1 - self.tau))\
+                for i in range(len(self.target_network_params))]
         
-        self.assign_active_network_params = [self.network_params[i].assign(self.target_network_params[i]) for i in range(len(self.network_params))]
+        self.assign_active_network_params = \
+                [self.network_params[i].assign(\
+                self.target_network_params[i]) for i in range(len(self.network_params))]
 
         #gradient provided by critic network
         self.action_gradient = tf.placeholder(tf.float32, [2])
         self.log_target_scaled_out = tf.log(self.target_scaled_out)
 
         self.actor_gradients = tf.gradients(self.log_target_scaled_out, self.target_network_params, self.action_gradient)
-        print(self.actor_gradients)
+        print (self.actor_gradients)
 
         self.grads = [tf.placeholder(tf.float32, [600,1]), 
                         tf.placeholder(tf.float32, [1,]),
@@ -54,7 +60,9 @@ class ActorNetwork(object):
         t1 = tflearn.fully_connected(input_l, 1)
         t2 = tflearn.fully_connected(input_d, 1)
 
-        scaled_out = tflearn.activation(tf.matmul(input_l,t1.W) + tf.matmul(input_d,t2.W) + t1.b, activation = 'sigmoid')
+        scaled_out = tflearn.activation(\
+                tf.matmul(input_l,t1.W) + tf.matmul(input_d,t2.W) + t1.b,\
+                activation = 'sigmoid')
         
         s_out = tf.clip_by_value(scaled_out[0][0], 1e-5, 1 - 1e-5)
 

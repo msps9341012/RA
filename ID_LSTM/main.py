@@ -1,3 +1,4 @@
+
 import numpy as np
 import tensorflow as tf
 import random
@@ -25,9 +26,9 @@ if args.fasttest == 1:
     train_data = train_data[:100]
     dev_data = dev_data[:20]
     test_data = test_data[:20]
-print "train_data ", len(train_data)
-print "dev_data", len(dev_data)
-print "test_data", len(test_data)
+print("train_data ", len(train_data))
+print("dev_data", len(dev_data)))
+print("test_data", len(test_data))
 
 def sampling_RL(sess, actor, inputs, vec, lenth, epsilon=0., Random=True):
     #print epsilon
@@ -48,7 +49,7 @@ def sampling_RL(sess, actor, inputs, vec, lenth, epsilon=0., Random=True):
         else:
             action = np.argmax(predicted)
         actions.append(action)
-        if action == 1: # 1 for retain
+        if action == 1:
             out_d, current_lower_state = critic.lower_LSTM_target(current_lower_state, [[inputs[pos]]])
     
     Rinput = []
@@ -60,11 +61,11 @@ def sampling_RL(sess, actor, inputs, vec, lenth, epsilon=0., Random=True):
         actions[lenth-2] = 1
         Rinput.append(inputs[lenth-2])
         Rlenth = 1
-    Rinput += [0] * (args.maxlenth - Rlenth) #有補零
+    Rinput += [0] * (args.maxlenth - Rlenth)
     return actions, states, Rinput, Rlenth
 
 def train(sess, actor, critic, train_data, batchsize, samplecnt=5, LSTM_trainable=True, RL_trainable=True):
-    print "training : total ", len(train_data), "nodes."
+    print ("training : total ", len(train_data), "nodes.")
     random.shuffle(train_data)
     for b in range(len(train_data) / batchsize):
         datas = train_data[b * batchsize: (b+1) * batchsize]
@@ -105,7 +106,7 @@ def train(sess, actor, critic, train_data, batchsize, samplecnt=5, LSTM_trainabl
                             grad[1] += g[1]
                             grad[2] += g[2]
                 actor.train(grad)
-            else: #Pretrain Critic 用
+            else:
                 out, loss, _ = critic.train([inputs], [lenth], [solution])
                 totloss += loss
         if RL_trainable:
@@ -117,7 +118,7 @@ def train(sess, actor, critic, train_data, batchsize, samplecnt=5, LSTM_trainabl
         if (b + 1) % 500 == 0:
             acc_test = test(sess, actor, critic, test_data, noRL= not RL_trainable)
             acc_dev = test(sess, actor, critic, dev_data, noRL= not RL_trainable)
-            print("batch ",b , "total loss ", totloss, "----test: ", acc_test, "| dev: ", acc_dev)
+            print( "batch ",b , "total loss ", totloss, "----test: ", acc_test, "| dev: ", acc_dev)
 
 
 def test(sess, actor, critic, test_data, noRL=False):
@@ -137,8 +138,6 @@ def test(sess, actor, critic, test_data, noRL=False):
             acc += 1
     return float(acc) / len(test_data)
 
-
-### Main ###
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 with tf.Session(config = config) as sess:
@@ -161,7 +160,7 @@ with tf.Session(config = config) as sess:
             critic.assign_target_network()
             acc_test = test(sess, actor, critic, test_data, True)
             acc_dev = test(sess, actor, critic, dev_data, True)
-            print ("LSTM_only ",i, "----test: ", acc_test, "| dev: ", acc_dev)
+            print "LSTM_only ",i, "----test: ", acc_test, "| dev: ", acc_dev
             saver.save(sess, "checkpoints/"+args.name+"_base", global_step=i)
         print ("LSTM pretrain OK")
     else:
@@ -175,7 +174,7 @@ with tf.Session(config = config) as sess:
             train(sess, actor, critic, train_data, args.batchsize, args.sample_cnt, LSTM_trainable=False)
             acc_test = test(sess, actor, critic, test_data)
             acc_dev = test(sess, actor, critic, dev_data)
-            print("RL pretrain ", i, "----test: ", acc_test, "| dev: ", acc_dev)
+            print "RL pretrain ", i, "----test: ", acc_test, "| dev: ", acc_dev
             saver.save(sess, "checkpoints/"+args.name+"_RLpre", global_step=i)
         print ("RL pretrain OK")
     else:
@@ -188,5 +187,3 @@ with tf.Session(config = config) as sess:
         acc_dev = test(sess, actor, critic, dev_data)
         print ("epoch ", e, "----test: ", acc_test, "| dev: ", acc_dev)
         saver.save(sess, "checkpoints/"+args.name, global_step=e)
-
-
